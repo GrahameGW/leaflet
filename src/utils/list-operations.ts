@@ -4,6 +4,29 @@ import type { ReplicacheMutators } from "src/replicache";
 import { useUIState } from "src/useUIState";
 import { v7 } from "uuid";
 
+export function orderListItems(
+  block: Block,
+  rep?: Replicache<ReplicacheMutators> | null,
+) {
+  if (!block.listData) return;
+  rep?.mutate.assertFact({
+    entity: block.value,
+    attribute: "block/list-style",
+    data: { type: "list-style-union", value: "ordered" },
+  });
+}
+
+export function unorderListItems(
+  block: Block,
+  rep?: Replicache<ReplicacheMutators> | null,
+) {
+  if (!block.listData) return;
+  rep?.mutate.assertFact({
+    entity: block.value,
+    attribute: "block/list-style",
+    data: { type: "list-style-union", value: "unordered" },
+  });
+}
 export function indent(
   block: Block,
   previousBlock?: Block,

@@ -155,6 +155,8 @@ export function Blocks(props: { entityID: string }) {
               previousBlock={arr[index - 1] || null}
               nextBlock={arr[index + 1] || null}
               nextPosition={nextPosition}
+              allBlocks={arr}
+              blockIndex={index}
             />
           );
         })}

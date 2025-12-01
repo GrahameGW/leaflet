@@ -39,8 +39,11 @@ export type Block = {
   position: string;
   value: string;
   type: Fact<"block/type">["data"]["value"];
+  previousBlock?: Block | null;
+  nextBlock?: Block | null;
   listData?: {
     checklist?: boolean;
+    listStyle?: "ordered" | "unordered";
     path: { depth: number; entity: string }[];
     parent: string;
     depth: number;
@@ -54,6 +57,8 @@ export type BlockProps = {
   nextBlock: Block | null;
   previousBlock: Block | null;
   nextPosition: string | null;
+  allBlocks?: Block[];
+  blockIndex?: number;
 } & Block;
 
 export const Block = memo(function Block(
@@ -387,12 +392,15 @@ export const ListMarker = (
   props: Block & {
     previousBlock?: Block | null;
     nextBlock?: Block | null;
+    allBlocks?: Block[];
+    blockIndex?: number;
   } & {
     className?: string;
   },
 ) => {
   let isMobile = useIsMobile();
   let checklist = useEntity(props.value, "block/check-list");
+  let listStyle = useEntity(props.value, "block/list-style");
   let headingLevel = useEntity(props.value, "block/heading-level")?.data.value;
   let children = useEntity(props.value, "card/block");
   let folded =
@@ -402,6 +410,41 @@ export const ListMarker = (
   let depth = props.listData?.depth;
   let { permissions } = useEntitySetContext();
   let { rep } = useReplicache();
+
+  // Calculate index for ordered lists by counting previous blocks at same depth
+  let index = 0;
+  if (listStyle?.data.value === "ordered" && props.listData && props.allBlocks && props.blockIndex !== undefined) {
+    for (let i = props.blockIndex - 1; i >= 0; i--) {
+      let current = props.allBlocks[i];
+
+      // At depth 1: stop counting if we hit a non-list block or shallower depth (list break)
+      // At depth > 1: stop if we hit a shallower depth
+      if (props.listData.depth === 1) {
+        if (!current.listData || current.listData.depth < 1) {
+          break; 
+        }
+      } else {
+        if (current.listData && current.listData.depth < props.listData.depth) {
+          break; 
+        }
+      }
+
+      if (
+        current.listData?.depth === props.listData.depth &&
+        current.listData?.listStyle === "ordered"
+      ) {
+        // At depth 1 (root list): count all items for continuous numbering (until a break)
+        // At depth > 1: only count items with same parent (separate numbering per section)
+        if (
+          props.listData.depth === 1 ||
+          current.listData.parent === props.listData.parent
+        ) {
+          index++;
+        }
+      }
+    }
+  }
+
   return (
     <div
       className={`shrink-0  flex justify-end items-center h-3 z-1
@@ -429,6 +472,11 @@ export const ListMarker = (
         }}
         className={`listMarker group/list-marker p-2 ${children.length > 0 ? "cursor-pointer" : "cursor-default"}`}
       >
+        {listStyle?.data.value === "ordered" ? (
+          <div className="text-secondary font-normal">
+            {index + 1}.
+          </div>
+        ) : (
         <div
           className={`h-[5px] w-[5px] rounded-full bg-secondary shrink-0 right-0 outline  outline-offset-1
                       ${
@@ -437,6 +485,7 @@ export const ListMarker = (
                           : ` ${children.length > 0 ? "sm:group-hover/list-marker:outline-secondary outline-transparent" : "outline-transparent"}`
                       }`}
         />
+      )}
       </button>
       {checklist && (
         <button

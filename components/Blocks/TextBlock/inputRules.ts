@@ -161,6 +161,26 @@ export const inputrules = (
         return tr;
       }),
 
+      // Ordered List
+      new InputRule(/^(\d+)\.\s$/, (state, match) => {
+        if (propsRef.current.listData) return null;
+        let tr = state.tr;
+        tr.delete(0, match[0].length);
+        repRef.current?.mutate.assertFact([
+          {
+            entity: propsRef.current.entityID,
+            attribute: "block/is-list",
+            data: { type: "boolean", value: true },
+          },
+          {
+            entity: propsRef.current.entityID,
+            attribute: "block/list-style",
+            data: { type: "list-style-union", value: "ordered" },
+          },
+        ]);
+        return tr;
+      }),
+
       //Blockquote
       new InputRule(/^([>]{1})\s$/, (state, match) => {
         let tr = state.tr;

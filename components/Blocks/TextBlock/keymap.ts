@@ -52,6 +52,8 @@ export const TextBlockKeymap = (
     },
     "Ctrl-a": metaA(propsRef, repRef),
     "Meta-a": metaA(propsRef, repRef),
+    Tab: tab(propsRef, repRef),
+    "Shift-Tab": shifttab(propsRef, repRef),
     Escape: (_state, _dispatch, view) => {
       view?.dom.blur();
       useUIState.setState(() => ({
@@ -367,6 +369,23 @@ const backspace =
     return true;
   };
 
+const tab =
+  (
+    propsRef: RefObject<BlockProps & { entity_set: { set: string } }>,
+    repRef: RefObject<Replicache<ReplicacheMutators> | null>,
+  ) =>
+  () => {
+    if (useUIState.getState().selectedBlocks.length > 1) return false;
+    if (!repRef.current) return false;
+    if (!propsRef.current.listData) return false;
+    indent(
+      propsRef.current,
+      propsRef.current.previousBlock,
+      repRef.current,
+    );
+    return true;
+  };
+
 const shifttab =
   (
     propsRef: RefObject<BlockProps & { entity_set: { set: string } }>,
@@ -375,7 +394,7 @@ const shifttab =
   () => {
     if (useUIState.getState().selectedBlocks.length > 1) return false;
     if (!repRef.current) return false;
-    if (!repRef.current) return false;
+    if (!propsRef.current.listData) return false;
     outdent(propsRef.current, propsRef.current.previousBlock, repRef.current);
     return true;
   };
@@ -426,12 +445,26 @@ const enter =
             y: position.data.position.y + box.height,
           },
         });
-        if (propsRef.current.listData)
+        if (propsRef.current.listData) {
           await repRef.current?.mutate.assertFact({
             entity: newEntityID,
             attribute: "block/is-list",
             data: { type: "boolean", value: true },
           });
+          // Copy list style for canvas blocks
+          let listStyle = await repRef.current?.query((tx) =>
+            scanIndex(tx).eav(propsRef.current.entityID, "block/list-style"),
+          );
+          if (listStyle?.[0])
+            await repRef.current?.mutate.assertFact({
+              entity: newEntityID,
+              attribute: "block/list-style",
+              data: {
+                type: "list-style-union",
+                value: listStyle[0].data.value,
+              },
+            });
+        }
         return;
       }
       if (propsRef.current.listData) {
@@ -513,6 +546,19 @@ const enter =
               type: "boolean",
               value:
                 state.selection.anchor === 1 ? checked?.[0].data.value : false,
+            },
+          });
+        // Copy list style (ordered/unordered) to new list item
+        let listStyle = await repRef.current?.query((tx) =>
+          scanIndex(tx).eav(propsRef.current.entityID, "block/list-style"),
+        );
+        if (listStyle?.[0])
+          await repRef.current?.mutate.assertFact({
+            entity: newEntityID,
+            attribute: "block/list-style",
+            data: {
+              type: "list-style-union",
+              value: listStyle[0].data.value,
             },
           });
       }

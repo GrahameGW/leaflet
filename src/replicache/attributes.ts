@@ -95,6 +95,10 @@ const BlockAttributes = {
     type: "string",
     cardinality: "one",
   },
+  "block/list-style": {
+    type: "list-style-union",
+    cardinality: "one",
+  }
 } as const;
 
 const MailboxAttributes = {
@@ -338,6 +342,10 @@ export type Data<A extends keyof typeof Attributes> = {
       | "code"
       | "blockquote"
       | "horizontal-rule";
+  };
+  "list-style-union": {
+    type: "list-style-union";
+    value: "ordered" | "unordered"
   };
   "canvas-pattern-union": {
     type: "canvas-pattern-union";

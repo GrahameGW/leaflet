@@ -4,7 +4,7 @@ import { useEntity, useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
 import { metaKey } from "src/utils/metaKey";
 import { ToolbarButton } from ".";
-import { indent, outdent, outdentFull } from "src/utils/list-operations";
+import { indent, orderListItems, outdent, outdentFull, unorderListItems } from "src/utils/list-operations";
 import { useEffect } from "react";
 import { Props } from "components/Icons/Props";
 import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
@@ -79,6 +79,7 @@ export const ListToolbar = (props: { onClose: () => void }) => {
     "block/check-list",
   );
   let isList = useEntity(focusedBlock?.entityID || null, "block/is-list");
+  let listStyle = useEntity(focusedBlock?.entityID || null, "block/list-style");
 
   let block = siblings.find((s) => s.value === focusedBlock?.entityID);
   let previousBlock =
@@ -134,6 +135,37 @@ export const ListToolbar = (props: { onClose: () => void }) => {
       <Separator classname="h-6" />
       <ToolbarButton
         disabled={!isList?.data.value}
+        tooltipContent={
+          <div className="flex flex-col gap-1 justify-center">
+            <div className="text-center">Unordered List</div>
+            <div className="flex gap-1 justify-center"></div>
+          </div>
+        }
+        onClick={() => {
+          if (!block || !rep) return;
+          unorderListItems(block, rep);
+        }}
+        >
+        <ListUnorderedSmall />
+        </ToolbarButton>
+        <ToolbarButton
+        disabled={!isList?.data.value}
+        tooltipContent={
+          <div className="flex flex-col gap-1 justify-center">
+            <div className="text-center">Ordered List</div>
+            <div className="flex gap-1 justify-center"></div>
+          </div>
+        }
+        onClick={() => {
+          if (!block || !rep) return;
+          orderListItems(block, rep);
+        }}
+      >
+        <ListOrderedSmall />
+      </ToolbarButton>
+      <Separator classname="h-6" />
+      <ToolbarButton
+        disabled={!isList?.data.value}
         tooltipContent=<div className="flex flex-col gap-1 justify-center">
           <div className="text-center">Add a Checkbox</div>
           <div className="flex gap-1 font-normal">
@@ -164,6 +196,27 @@ export const ListToolbar = (props: { onClose: () => void }) => {
 };
 
 export const ListUnorderedSmall = (props: Props) => {
+  return (
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      {...props}
+    >
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M8.1687 5.19995C7.61642 5.19995 7.1687 5.64767 7.1687 6.19995C7.1687 6.75224 7.61642 7.19995 8.1687 7.19995H19.5461C20.0984 7.19995 20.5461 6.75224 20.5461 6.19995C20.5461 5.64767 20.0984 5.19995 19.5461 5.19995H8.1687ZM4.35361 7.10005C4.85067 7.10005 5.25361 6.69711 5.25361 6.20005C5.25361 5.70299 4.85067 5.30005 4.35361 5.30005C3.85656 5.30005 3.45361 5.70299 3.45361 6.20005C3.45361 6.69711 3.85656 7.10005 4.35361 7.10005ZM5.25361 12.0001C5.25361 12.4972 4.85067 12.9001 4.35361 12.9001C3.85656 12.9001 3.45361 12.4972 3.45361 12.0001C3.45361 11.503 3.85656 11.1001 4.35361 11.1001C4.85067 11.1001 5.25361 11.503 5.25361 12.0001ZM8.1687 11C7.61642 11 7.1687 11.4477 7.1687 12C7.1687 12.5523 7.61642 13 8.1687 13H19.5461C20.0984 13 20.5461 12.5523 20.5461 12C20.5461 11.4477 20.0984 11 19.5461 11H8.1687ZM5.25361 17.8001C5.25361 18.2972 4.85067 18.7001 4.35361 18.7001C3.85656 18.7001 3.45361 18.2972 3.45361 17.8001C3.45361 17.3031 3.85656 16.9001 4.35361 16.9001C4.85067 16.9001 5.25361 17.3031 5.25361 17.8001ZM8.1687 16.8C7.61642 16.8 7.1687 17.2478 7.1687 17.8C7.1687 18.3523 7.61642 18.8 8.1687 18.8H19.5461C20.0984 18.8 20.5461 18.3523 20.5461 17.8C20.5461 17.2478 20.0984 16.8 19.5461 16.8H8.1687Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+};
+
+// TODO: New Icon
+export const ListOrderedSmall = (props: Props) => {
   return (
     <svg
       width="24"

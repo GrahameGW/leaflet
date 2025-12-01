@@ -104,6 +104,7 @@ export const getBlocksWithType = async (
                 root.data.value,
                 "block/check-list",
               );
+              let listStyle = (await scan.eav(root.data.value, "block/list-style"))[0];
               if (!type) return [];
               let newPath = [...path, { entity: root.data.value, depth }];
               let childBlocks = await Promise.all(
@@ -122,6 +123,7 @@ export const getBlocksWithType = async (
                     parent,
                     path: newPath,
                     checklist: !!checklist[0],
+                    listStyle: listStyle?.data.value
                   },
                 },
                 ...childBlocks.flat(),
@@ -171,6 +173,7 @@ export const getBlocksWithTypeLocal = (
             .sort((a, b) => (a.data.position > b.data.position ? 1 : -1));
           let type = scan.eav(root.data.value, "block/type")[0];
           if (!type) return [];
+          let listStyle = scan.eav(root.data.value, "block/list-style")[0];
           let newPath = [...path, { entity: root.data.value, depth }];
           let childBlocks = children.map((c) =>
             getChildren(c, root.data.value, depth + 1, newPath),
@@ -181,7 +184,12 @@ export const getBlocksWithTypeLocal = (
               factID: root.id,
               type: type.data.value,
               parent: b.entity,
-              listData: { depth: depth, parent, path: newPath },
+              listData: {
+                depth: depth,
+                parent,
+                path: newPath,
+                listStyle: listStyle?.data.value
+              },
             },
             ...childBlocks.flat(),
           ];

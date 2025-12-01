@@ -18,7 +18,6 @@ import { BlockCanvasPageSmall } from "components/Icons/BlockCanvasPageSmall";
 import { BlockDocPageSmall } from "components/Icons/BlockDocPageSmall";
 import { BlockEmbedSmall } from "components/Icons/BlockEmbedSmall";
 import { BlockImageSmall } from "components/Icons/BlockImageSmall";
-import { BlockMailboxSmall } from "components/Icons/BlockMailboxSmall";
 import { BlockPollSmall } from "components/Icons/BlockPollSmall";
 import {
   ParagraphSmall,
@@ -27,8 +26,7 @@ import {
   Header3Small,
 } from "components/Icons/BlockTextSmall";
 import { LinkSmall } from "components/Icons/LinkSmall";
-import { BlockRSVPSmall } from "components/Icons/BlockRSVPSmall";
-import { ListUnorderedSmall } from "components/Toolbar/ListToolbar";
+import { ListUnorderedSmall, ListOrderedSmall } from "components/Toolbar/ListToolbar";
 import { BlockMathSmall } from "components/Icons/BlockMathSmall";
 import { BlockCodeSmall } from "components/Icons/BlockCodeSmall";
 import { QuoteSmall } from "components/Icons/QuoteSmall";
@@ -151,16 +149,38 @@ export const blockCommands: Command[] = [
     },
   },
   {
-    name: "List",
+    name: "Unordered List",
     icon: <ListUnorderedSmall />,
     type: "text",
     onSelect: async (rep, props, um) => {
       let entity = await createBlockWithType(rep, props, "text");
-      await rep?.mutate.assertFact({
+      await rep?.mutate.assertFact([{
         entity,
         attribute: "block/is-list",
         data: { value: true, type: "boolean" },
-      });
+      }, {
+        entity,
+        attribute: "block/list-style",
+        data: { value: "unordered", type: "list-style-union" },
+      }]);
+      clearCommandSearchText(entity);
+    },
+  },
+  {
+    name: "Ordered List",
+    icon: <ListOrderedSmall />,
+    type: "text",
+    onSelect: async (rep, props, um) => {
+      let entity = await createBlockWithType(rep, props, "text");
+      await rep?.mutate.assertFact([{
+        entity,
+        attribute: "block/is-list",
+        data: { value: true, type: "boolean" },
+      }, {
+        entity,
+        attribute: "block/list-style",
+        data: { value: "ordered", type: "list-style-union" },
+      }]);
       clearCommandSearchText(entity);
     },
   },
