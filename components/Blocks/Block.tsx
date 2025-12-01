@@ -44,6 +44,7 @@ export type Block = {
   listData?: {
     checklist?: boolean;
     listStyle?: "ordered" | "unordered";
+    listNumber?: number;
     path: { depth: number; entity: string }[];
     parent: string;
     depth: number;
@@ -407,42 +408,47 @@ export const ListMarker = (
     useUIState((s) => s.foldedBlocks.includes(props.value)) &&
     children.length > 0;
 
+  let [isEditingNumber, setIsEditingNumber] = useState(false);
+  let [editValue, setEditValue] = useState("");
+
   let depth = props.listData?.depth;
   let { permissions } = useEntitySetContext();
   let { rep } = useReplicache();
 
-  // Calculate index for ordered lists by counting previous blocks at same depth
-  let index = 0;
-  if (listStyle?.data.value === "ordered" && props.listData && props.allBlocks && props.blockIndex !== undefined) {
-    for (let i = props.blockIndex - 1; i >= 0; i--) {
-      let current = props.allBlocks[i];
+  // Use stored list number, or calculate it if not stored
+  let displayNumber = props.listData?.listNumber;
 
-      // At depth 1: stop counting if we hit a non-list block or shallower depth (list break)
-      // At depth > 1: stop if we hit a shallower depth
-      if (props.listData.depth === 1) {
-        if (!current.listData || current.listData.depth < 1) {
-          break; 
-        }
-      } else {
-        if (current.listData && current.listData.depth < props.listData.depth) {
-          break; 
-        }
+  if (!displayNumber && listStyle?.data.value === "ordered" && props.listData && props.allBlocks && props.blockIndex !== undefined) {
+    // Walk backwards to find previous block at same depth
+    for (let i = props.blockIndex - 1; i >= 0; i--) {
+      let prevBlock = props.allBlocks[i];
+
+      // Skip deeper blocks (indented items)
+      if (prevBlock.listData && prevBlock.listData.depth > props.listData.depth) {
+        continue;
       }
 
-      if (
-        current.listData?.depth === props.listData.depth &&
-        current.listData?.listStyle === "ordered"
-      ) {
-        // At depth 1 (root list): count all items for continuous numbering (until a break)
-        // At depth > 1: only count items with same parent (separate numbering per section)
-        if (
-          props.listData.depth === 1 ||
-          current.listData.parent === props.listData.parent
-        ) {
-          index++;
-        }
+      // Stop at shallower blocks or non-lists - we're starting a new list
+      if (!prevBlock.listData ||
+          prevBlock.listData.depth < props.listData.depth ||
+          prevBlock.listData.listStyle !== "ordered") {
+        displayNumber = 1;
+        break;
+      }
+
+      // Found a block at same depth - use its number + 1
+      if (prevBlock.listData.depth === props.listData.depth) {
+        displayNumber = (prevBlock.listData.listNumber || 1) + 1;
+        break;
       }
     }
+
+    // If we didn't find any previous block, start at 1
+    if (!displayNumber) {
+      displayNumber = 1;
+    }
+  } else if (!displayNumber) {
+    displayNumber = 1;
   }
 
   return (
@@ -473,9 +479,85 @@ export const ListMarker = (
         className={`listMarker group/list-marker p-2 ${children.length > 0 ? "cursor-pointer" : "cursor-default"}`}
       >
         {listStyle?.data.value === "ordered" ? (
-          <div className="text-secondary font-normal">
-            {index + 1}.
-          </div>
+          isEditingNumber ? (
+            <input
+              type="number"
+              autoFocus
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              onBlur={async () => {
+                const num = parseInt(editValue);
+                if (!isNaN(num) && num > 0 && rep && props.listData) {
+                  // Set this block's list number
+                  await rep.mutate.assertFact({
+                    entity: props.value,
+                    attribute: "block/list-number",
+                    data: { type: "number", value: num },
+                  });
+
+                  // Update all subsequent blocks at the same depth
+                  let currentBlock = props.nextBlock;
+                  let currentNumber = num + 1;
+
+                  while (currentBlock) {
+                    // Skip blocks at deeper depths (indented items)
+                    if (currentBlock.listData && currentBlock.listData.depth > props.listData.depth) {
+                      currentBlock = currentBlock.nextBlock;
+                      continue;
+                    }
+
+                    // Stop at blocks at shallower depths (parent level)
+                    if (currentBlock.listData && currentBlock.listData.depth < props.listData.depth) {
+                      break;
+                    }
+
+                    // Stop at non-ordered-list blocks
+                    if (!currentBlock.listData || currentBlock.listData.listStyle !== "ordered") {
+                      break;
+                    }
+
+                    // Same depth - set the list number
+                    if (currentBlock.listData.depth === props.listData.depth) {
+                      await rep.mutate.assertFact({
+                        entity: currentBlock.value,
+                        attribute: "block/list-number",
+                        data: { type: "number", value: currentNumber },
+                      });
+                      currentNumber++;
+                    }
+
+                    currentBlock = currentBlock.nextBlock;
+                  }
+                }
+                setIsEditingNumber(false);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.currentTarget.blur();
+                } else if (e.key === "Escape") {
+                  setIsEditingNumber(false);
+                } else if (e.key === "Tab") {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }
+              }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-10 text-right text-secondary font-normal bg-transparent border border-border rounded px-1"
+            />
+          ) : (
+            <div
+              className="text-secondary font-normal text-right min-w-[2rem]"
+              onDoubleClick={(e) => {
+                e.stopPropagation();
+                if (permissions.write) {
+                  setEditValue(String(displayNumber));
+                  setIsEditingNumber(true);
+                }
+              }}
+            >
+              {displayNumber}.
+            </div>
+          )
         ) : (
         <div
           className={`h-[5px] w-[5px] rounded-full bg-secondary shrink-0 right-0 outline  outline-offset-1

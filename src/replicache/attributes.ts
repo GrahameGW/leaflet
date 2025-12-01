@@ -98,6 +98,10 @@ const BlockAttributes = {
   "block/list-style": {
     type: "list-style-union",
     cardinality: "one",
+  },
+  "block/list-number": {
+    type: "number",
+    cardinality: "one",
   }
 } as const;
 
