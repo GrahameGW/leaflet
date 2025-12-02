@@ -96,6 +96,62 @@ const addBlock: Mutation<{
   });
 };
 
+const addListBlock: Mutation<{
+  parent: string;
+  permission_set: string;
+  factID: string;
+  type: Fact<"block/type">["data"]["value"];
+  newEntityID: string;
+  position: string;
+  listNumber: number;
+  listStyle?: "ordered" | "unordered";
+  checkList?: boolean;
+}> = async (args, ctx) => {
+  await ctx.createEntity({
+    entityID: args.newEntityID,
+    permission_set: args.permission_set,
+  });
+  await ctx.assertFact({
+    entity: args.parent,
+    id: args.factID,
+    data: {
+      type: "ordered-reference",
+      value: args.newEntityID,
+      position: args.position,
+    },
+    attribute: "card/block",
+  });
+  await ctx.assertFact({
+    entity: args.newEntityID,
+    data: { type: "block-type-union", value: args.type },
+    attribute: "block/type",
+  });
+  await ctx.assertFact({
+    entity: args.newEntityID,
+    data: { type: "boolean", value: true },
+    attribute: "block/is-list",
+  });
+  await ctx.assertFact({
+    entity: args.newEntityID,
+    data: { type: "number", value: args.listNumber },
+    attribute: "block/list-number",
+  });
+  if (args.listStyle) {
+    await ctx.assertFact({
+      entity: args.newEntityID,
+      data: { type: "list-style-union", value: args.listStyle },
+      attribute: "block/list-style",
+    });
+  }
+  if (args.checkList !== undefined) {
+    await ctx.assertFact({
+      entity: args.newEntityID,
+      data: { type: "boolean", value: args.checkList },
+      attribute: "block/check-list",
+    });
+  }
+};
+
 const addLastBlock: Mutation<{
   parent: string;
   factID: string;
@@ -628,6 +684,7 @@ const updatePublicationDraft: Mutation<{
 export const mutations = {
   retractAttribute,
   addBlock,
+  addListBlock,
   addCanvasBlock,
   addLastBlock,
   outdentBlock,

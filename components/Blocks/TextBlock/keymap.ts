@@ -2,8 +2,7 @@ import { BlockProps } from "../Block";
 import { focusBlock } from "src/utils/focusBlock";
 import { EditorView } from "prosemirror-view";
 import { generateKeyBetween } from "fractional-indexing";
-import { baseKeymap, setBlockType, toggleMark } from "prosemirror-commands";
-import { keymap } from "prosemirror-keymap";
+import { toggleMark } from "prosemirror-commands";
 import {
   Command,
   EditorState,
@@ -13,11 +12,11 @@ import {
 import { RefObject } from "react";
 import { Replicache } from "replicache";
 import type { Fact, ReplicacheMutators } from "src/replicache";
+import type { FactInput } from "src/replicache/mutations";
 import { elementId } from "src/utils/elementId";
 import { schema } from "./schema";
 import { useUIState } from "src/useUIState";
 import { setEditorState, useEditorStates } from "src/state/useEditorState";
-import { focusPage } from "components/Pages";
 import { v7 } from "uuid";
 import { scanIndex } from "src/replicache/utils";
 import { indent, outdent } from "src/utils/list-operations";
@@ -380,7 +379,7 @@ const tab =
     if (!propsRef.current.listData) return false;
     indent(
       propsRef.current,
-      propsRef.current.previousBlock,
+      propsRef.current.previousBlock ?? undefined,
       repRef.current,
     );
     return true;
@@ -507,7 +506,17 @@ const enter =
             children[0]?.data.position || null,
           );
         }
-        await repRef.current?.mutate.addBlock({
+        let checked = await repRef.current?.query((tx) =>
+          scanIndex(tx).eav(propsRef.current.entityID, "block/check-list"),
+        );
+        let listStyle = await repRef.current?.query((tx) =>
+          scanIndex(tx).eav(propsRef.current.entityID, "block/list-style"),
+        );
+        let listNumber = await repRef.current?.query((tx) =>
+          scanIndex(tx).eav(propsRef.current.entityID, "block/list-number"),
+        );
+
+        await repRef.current?.mutate.addListBlock({
           newEntityID,
           factID: v7(),
           permission_set: propsRef.current.entity_set.set,
@@ -516,6 +525,9 @@ const enter =
             : propsRef.current.listData.parent,
           type: blockType,
           position,
+          listNumber: createChild ? 1 : (listNumber?.[0]?.data.value ?? 0) + 1,
+          listStyle: listStyle?.[0]?.data.value,
+          checkList: checked?.[0] ? (state.selection.anchor === 1 ? checked[0].data.value : false) : undefined,
         });
         if (
           !createChild &&
@@ -530,37 +542,6 @@ const enter =
             after: null,
           });
         }
-        await repRef.current?.mutate.assertFact({
-          entity: newEntityID,
-          attribute: "block/is-list",
-          data: { type: "boolean", value: true },
-        });
-        let checked = await repRef.current?.query((tx) =>
-          scanIndex(tx).eav(propsRef.current.entityID, "block/check-list"),
-        );
-        if (checked?.[0])
-          await repRef.current?.mutate.assertFact({
-            entity: newEntityID,
-            attribute: "block/check-list",
-            data: {
-              type: "boolean",
-              value:
-                state.selection.anchor === 1 ? checked?.[0].data.value : false,
-            },
-          });
-        // Copy list style (ordered/unordered) to new list item
-        let listStyle = await repRef.current?.query((tx) =>
-          scanIndex(tx).eav(propsRef.current.entityID, "block/list-style"),
-        );
-        if (listStyle?.[0])
-          await repRef.current?.mutate.assertFact({
-            entity: newEntityID,
-            attribute: "block/list-style",
-            data: {
-              type: "list-style-union",
-              value: listStyle[0].data.value,
-            },
-          });
       }
       // if the block is not a list, add a new text block after it
       if (!propsRef.current.listData) {

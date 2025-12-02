@@ -177,6 +177,11 @@ export const inputrules = (
             attribute: "block/list-style",
             data: { type: "list-style-union", value: "ordered" },
           },
+          {
+            entity: propsRef.current.entityID,
+            attribute: "block/list-number",
+            data: { type: "number", value: 1 },
+          },
         ]);
         return tr;
       }),

@@ -2,18 +2,20 @@ import { Block } from "components/Blocks/Block";
 import { Replicache } from "replicache";
 import type { ReplicacheMutators } from "src/replicache";
 import { useUIState } from "src/useUIState";
+import { getBlocksWithType } from "src/hooks/queries/useBlocks";
 import { v7 } from "uuid";
 
-export function orderListItems(
+export async function orderListItems(
   block: Block,
   rep?: Replicache<ReplicacheMutators> | null,
 ) {
   if (!block.listData) return;
-  rep?.mutate.assertFact({
+  await rep?.mutate.assertFact({
     entity: block.value,
     attribute: "block/list-style",
     data: { type: "list-style-union", value: "ordered" },
   });
+  await setListNumberForNewBlock(block.value, block.parent, rep);
 }
 
 export function unorderListItems(
@@ -127,3 +129,47 @@ export function outdent(
     });
   }
 }
+  
+  export async function setListNumberForNewBlock(
+    blockEntityID: string,
+    parentEntityID: string,
+    rep?: Replicache<ReplicacheMutators> | null,
+  ) {
+    if (!rep) return;
+    const allBlocks = await rep.query(async (tx) => {
+      return await getBlocksWithType(tx, parentEntityID);
+    });
+
+    if (!allBlocks) return;
+    const currentIndex = allBlocks.findIndex(b => b.value === blockEntityID);
+    if (currentIndex === -1) return;
+
+    const currentBlock = allBlocks[currentIndex];
+    if (!currentBlock.listData?.listStyle || currentBlock.listData.listStyle !== "ordered") {
+      return;
+    }
+
+    let displayNumber = 1;
+    const depth = currentBlock.listData.depth;
+    for (let i = currentIndex - 1; i >= 0; i--) {
+      const block = allBlocks[i];
+      if (!block.listData || block.listData.listStyle ===
+  "unordered") {
+        break;
+      }
+      if (block.listData.depth > depth) {
+        continue;
+      }
+      else if (block.listData.depth < depth) {
+        break;
+      }
+      displayNumber = (block.listData.listNumber || 0) + 1;
+      break;
+    }
+
+    await rep.mutate.assertFact({
+      entity: blockEntityID,
+      attribute: "block/list-number",
+      data: { type: "number", value: displayNumber },
+    });
+  }

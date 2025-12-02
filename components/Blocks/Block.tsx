@@ -399,7 +399,6 @@ export const ListMarker = (
     className?: string;
   },
 ) => {
-  let isMobile = useIsMobile();
   let checklist = useEntity(props.value, "block/check-list");
   let listStyle = useEntity(props.value, "block/list-style");
   let headingLevel = useEntity(props.value, "block/heading-level")?.data.value;
@@ -411,52 +410,17 @@ export const ListMarker = (
   let [isEditingNumber, setIsEditingNumber] = useState(false);
   let [editValue, setEditValue] = useState("");
 
-  let depth = props.listData?.depth;
   let { permissions } = useEntitySetContext();
   let { rep } = useReplicache();
 
-  // Use stored list number, or calculate it if not stored
-  let displayNumber = props.listData?.listNumber;
-
-  if (!displayNumber && listStyle?.data.value === "ordered" && props.listData && props.allBlocks && props.blockIndex !== undefined) {
-    // Walk backwards to find previous block at same depth
-    for (let i = props.blockIndex - 1; i >= 0; i--) {
-      let prevBlock = props.allBlocks[i];
-
-      // Skip deeper blocks (indented items)
-      if (prevBlock.listData && prevBlock.listData.depth > props.listData.depth) {
-        continue;
-      }
-
-      // Stop at shallower blocks or non-lists - we're starting a new list
-      if (!prevBlock.listData ||
-          prevBlock.listData.depth < props.listData.depth ||
-          prevBlock.listData.listStyle !== "ordered") {
-        displayNumber = 1;
-        break;
-      }
-
-      // Found a block at same depth - use its number + 1
-      if (prevBlock.listData.depth === props.listData.depth) {
-        displayNumber = (prevBlock.listData.listNumber || 1) + 1;
-        break;
-      }
-    }
-
-    // If we didn't find any previous block, start at 1
-    if (!displayNumber) {
-      displayNumber = 1;
-    }
-  } else if (!displayNumber) {
-    displayNumber = 1;
-  }
+  let displayNumber = props.listData?.listNumber ?? -1;
+  let depth = props.listData?.depth;
 
   return (
     <div
       className={`shrink-0  flex justify-end items-center h-3 z-1
                   ${props.className}
-                  ${
-                    props.type === "heading"
+                  ${props.type === "heading"
                       ? headingLevel === 3
                         ? "pt-[12px]"
                         : headingLevel === 2

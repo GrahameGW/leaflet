@@ -239,42 +239,15 @@ async function Enter({ e, props, rep, entity_set }: Args) {
     return;
   }
 
-  // if it's a list, create a new list item at the same depth
-  if (props.listData) {
-    let hasChild =
-      props.nextBlock?.listData &&
-      props.nextBlock.listData.depth > props.listData.depth;
-    position = generateKeyBetween(
-      hasChild ? null : props.position,
-      props.nextPosition,
-    );
-    await rep?.mutate.addBlock({
-      newEntityID,
-      factID: v7(),
-      permission_set: entity_set.set,
-      parent: hasChild ? props.entityID : props.listData.parent,
-      type: "text",
-      position,
-    });
-    await rep?.mutate.assertFact({
-      entity: newEntityID,
-      attribute: "block/is-list",
-      data: { type: "boolean", value: true },
-    });
-  }
-
-  // if it's not a list, create a new block between current and next block
-  if (!props.listData) {
-    position = generateKeyBetween(props.position, props.nextPosition);
-    await rep?.mutate.addBlock({
-      newEntityID,
-      factID: v7(),
-      permission_set: entity_set.set,
-      parent: props.parent,
-      type: "text",
-      position,
-    });
-  }
+  position = generateKeyBetween(props.position, props.nextPosition);
+  await rep?.mutate.addBlock({
+    newEntityID,
+    factID: v7(),
+    permission_set: entity_set.set,
+    parent: props.parent,
+    type: "text",
+    position,
+  });
   setTimeout(() => {
     document.getElementById(elementId.block(newEntityID).text)?.focus();
   }, 10);

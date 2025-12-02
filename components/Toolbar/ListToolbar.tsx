@@ -156,9 +156,9 @@ export const ListToolbar = (props: { onClose: () => void }) => {
             <div className="flex gap-1 justify-center"></div>
           </div>
         }
-        onClick={() => {
+        onClick={async () => {
           if (!block || !rep) return;
-          orderListItems(block, rep);
+          await orderListItems(block, rep);
         }}
       >
         <ListOrderedSmall />
