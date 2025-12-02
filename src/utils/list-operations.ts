@@ -47,6 +47,11 @@ export function indent(
     factID: v7(),
     entity: block.value,
   });
+  rep?.mutate.assertFact({
+    entity: block.value,
+    attribute: "block/list-number",
+    data: { type: "number", value: 1 },
+  });
   return true;
 }
 
