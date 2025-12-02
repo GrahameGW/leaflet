@@ -70,7 +70,6 @@ export function outdentFull(
 
   // find the next block that is a level 1 list item or not a list item.
   // If there are none or this block is a level 1 list item, we don't need to move anything
-
   let after = block.listData?.path.find((f) => f.depth === 1)?.entity;
 
   // move this block to be after that block
@@ -91,7 +90,7 @@ export function outdentFull(
   });
 }
 
-export function outdent(
+export async function outdent(
   block: Block,
   previousBlock: Block | null,
   rep?: Replicache<ReplicacheMutators> | null,
@@ -126,11 +125,44 @@ export function outdent(
     if (!parent) return false;
     if (useUIState.getState().foldedBlocks.includes(parent))
       useUIState.getState().toggleFold(parent);
-    rep?.mutate.outdentBlock({
+    await rep?.mutate.outdentBlock({
       block: block.value,
       newParent: parent,
       oldParent: listData.parent,
       after,
+    });
+
+    if (!rep) return;
+    const allBlocks = await rep.query(async (tx) => {
+      return await getBlocksWithType(tx, parent);
+    });
+    if (!allBlocks) return;
+
+    const currentIndex = allBlocks.findIndex(b => b.value === block.value);
+    if (currentIndex === -1) return;
+
+    const newDepth = listData.depth - 1;
+
+    let displayNumber = 1;
+    for (let i = currentIndex - 1; i >= 0; i--) {
+      const prevBlock = allBlocks[i];
+      if (!prevBlock.listData) {
+        break;
+      }
+      if (prevBlock.listData.depth > newDepth) {
+        continue;
+      }
+      if (prevBlock.listData.depth < newDepth) {
+        break;
+      }
+      displayNumber = (prevBlock.listData.listNumber || 0) + 1;
+      break;
+    }
+
+    await rep.mutate.assertFact({
+      entity: block.value,
+      attribute: "block/list-number",
+      data: { type: "number", value: displayNumber },
     });
   }
 }

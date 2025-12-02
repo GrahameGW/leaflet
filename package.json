@@ -112,7 +112,7 @@
     "eslint-config-next": "16.0.3",
     "postcss": "^8.4.38",
     "prettier": "3.2.5",
-    "supabase": "^1.187.3",
+    "supabase": "^1.226.4",
     "tailwindcss": "^4.1.13",
     "tsx": "^4.19.3",
     "typescript": "^5.8.3",

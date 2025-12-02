@@ -91,12 +91,12 @@ type Args = {
 
 const AllowedIfTextBlock = ["Tab"];
 
-function Tab({ e, props, rep }: Args) {
+async function Tab({ e, props, rep }: Args) {
   // if tab or shift tab, indent or outdent
   if (useUIState.getState().selectedBlocks.length > 1) return false;
   if (e.shiftKey) {
     e.preventDefault();
-    outdent(props, props.previousBlock, rep);
+    await outdent(props, props.previousBlock, rep);
   } else {
     e.preventDefault();
     if (props.previousBlock) indent(props, props.previousBlock, rep);

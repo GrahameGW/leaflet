@@ -427,7 +427,7 @@ export function SelectionManager() {
                 previousBlock = siblings[i - parentoffset];
               }
               if (!block.listData || !previousBlock.listData) continue;
-              outdent(block, previousBlock, rep);
+              await outdent(block, previousBlock, rep);
             }
           } else {
             for (let i = 0; i < siblings.length; i++) {

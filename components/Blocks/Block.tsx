@@ -9,6 +9,7 @@ import { useLongPress } from "src/hooks/useLongPress";
 import { focusBlock } from "src/utils/focusBlock";
 import { useHandleDrop } from "./useHandleDrop";
 import { useEntitySetContext } from "components/EntitySetProvider";
+import { useListNumberEdit } from "src/hooks/useListNumberEdit";
 
 import { TextBlock } from "components/Blocks/TextBlock";
 import { ImageBlock } from "./ImageBlock";
@@ -407,13 +408,25 @@ export const ListMarker = (
     useUIState((s) => s.foldedBlocks.includes(props.value)) &&
     children.length > 0;
 
-  let [isEditingNumber, setIsEditingNumber] = useState(false);
-  let [editValue, setEditValue] = useState("");
-
   let { permissions } = useEntitySetContext();
   let { rep } = useReplicache();
 
   let displayNumber = props.listData?.listNumber ?? -1;
+
+  const {
+    isEditingNumber,
+    editValue,
+    startEditing,
+    handleChange,
+    handleBlur,
+    handleKeyDown,
+  } = useListNumberEdit(
+    props.value,
+    props.listData,
+    props.nextBlock,
+    rep,
+    permissions.write
+  );
   let depth = props.listData?.depth;
 
   return (
@@ -448,63 +461,9 @@ export const ListMarker = (
               type="number"
               autoFocus
               value={editValue}
-              onChange={(e) => setEditValue(e.target.value)}
-              onBlur={async () => {
-                const num = parseInt(editValue);
-                if (!isNaN(num) && num > 0 && rep && props.listData) {
-                  // Set this block's list number
-                  await rep.mutate.assertFact({
-                    entity: props.value,
-                    attribute: "block/list-number",
-                    data: { type: "number", value: num },
-                  });
-
-                  // Update all subsequent blocks at the same depth
-                  let currentBlock = props.nextBlock;
-                  let currentNumber = num + 1;
-
-                  while (currentBlock) {
-                    // Skip blocks at deeper depths (indented items)
-                    if (currentBlock.listData && currentBlock.listData.depth > props.listData.depth) {
-                      currentBlock = currentBlock.nextBlock;
-                      continue;
-                    }
-
-                    // Stop at blocks at shallower depths (parent level)
-                    if (currentBlock.listData && currentBlock.listData.depth < props.listData.depth) {
-                      break;
-                    }
-
-                    // Stop at non-ordered-list blocks
-                    if (!currentBlock.listData || currentBlock.listData.listStyle !== "ordered") {
-                      break;
-                    }
-
-                    // Same depth - set the list number
-                    if (currentBlock.listData.depth === props.listData.depth) {
-                      await rep.mutate.assertFact({
-                        entity: currentBlock.value,
-                        attribute: "block/list-number",
-                        data: { type: "number", value: currentNumber },
-                      });
-                      currentNumber++;
-                    }
-
-                    currentBlock = currentBlock.nextBlock;
-                  }
-                }
-                setIsEditingNumber(false);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.currentTarget.blur();
-                } else if (e.key === "Escape") {
-                  setIsEditingNumber(false);
-                } else if (e.key === "Tab") {
-                  e.preventDefault();
-                  e.stopPropagation();
-                }
-              }}
+              onChange={(e) => handleChange(e.target.value)}
+              onBlur={handleBlur}
+              onKeyDown={handleKeyDown}
               onClick={(e) => e.stopPropagation()}
               className="w-10 text-right text-secondary font-normal bg-transparent border border-border rounded px-1"
             />
@@ -513,10 +472,7 @@ export const ListMarker = (
               className="text-secondary font-normal text-right min-w-[2rem]"
               onDoubleClick={(e) => {
                 e.stopPropagation();
-                if (permissions.write) {
-                  setEditValue(String(displayNumber));
-                  setIsEditingNumber(true);
-                }
+                startEditing(displayNumber);
               }}
             >
               {displayNumber}.

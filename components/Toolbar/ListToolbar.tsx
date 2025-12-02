@@ -105,9 +105,9 @@ export const ListToolbar = (props: { onClose: () => void }) => {
             </div>
           </div>
         }
-        onClick={() => {
+        onClick={async () => {
           if (!rep || !block) return;
-          outdent(block, previousBlock, rep);
+          await outdent(block, previousBlock, rep);
         }}
       >
         <ListIndentDecreaseSmall />
