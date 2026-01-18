@@ -535,7 +535,7 @@ export const ListMarker = (
                 }
               }}
               autoFocus
-              className="text-secondary font-normal text-right min-w-[2rem] w-[2.5rem] bg-transparent border border-accent focus:outline-none px-1"
+              className="text-secondary font-normal text-right min-w-[2rem] w-[2.2rem] bg-transparent border border-accent focus:outline-none px-1"
             />
           ) : (
             <div
