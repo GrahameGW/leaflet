@@ -169,11 +169,12 @@ export const inputrules = (
         return tr;
       }),
 
-      // Ordered List (flat structure with depth)
+      // Ordered List - respect the starting number typed
       new InputRule(/^(\d+)\.\s$/, (state, match) => {
         if (propsRef.current.listData) return null;
         let tr = state.tr;
         tr.delete(0, match[0].length);
+        const startNumber = parseInt(match[1], 10);
         repRef.current?.mutate.assertFact([
           {
             entity: propsRef.current.entityID,
@@ -188,7 +189,7 @@ export const inputrules = (
           {
             entity: propsRef.current.entityID,
             attribute: "block/list-number",
-            data: { type: "number", value: 1 },
+            data: { type: "number", value: startNumber },
           },
         ]);
         return tr;
