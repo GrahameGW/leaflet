@@ -169,8 +169,8 @@ export const inputrules = (
         return tr;
       }),
 
-      // Ordered List - respect the starting number typed
-      new InputRule(/^(\d+)\.\s$/, (state, match) => {
+      // Ordered List - respect the starting number typed (supports "1." or "1)")
+      new InputRule(/^(\d+)[.)]\s$/, (state, match) => {
         if (propsRef.current.listData) return null;
         let tr = state.tr;
         tr.delete(0, match[0].length);

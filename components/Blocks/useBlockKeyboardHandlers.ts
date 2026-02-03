@@ -100,7 +100,7 @@ async function Tab({ e, props, rep }: Args) {
     await outdent(props, props.previousBlock, rep, { foldedBlocks, toggleFold });
   } else {
     e.preventDefault();
-    if (props.previousBlock) indent(props, props.previousBlock, rep, { foldedBlocks, toggleFold });
+    if (props.previousBlock) await indent(props, props.previousBlock, rep, { foldedBlocks, toggleFold });
   }
 }
 
