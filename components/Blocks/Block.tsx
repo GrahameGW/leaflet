@@ -612,11 +612,11 @@ export const ListMarker = (
                 }
               }}
               autoFocus
-              className="text-secondary font-normal text-right min-w-[2rem] w-[2.2rem] bg-transparent border border-accent focus:outline-none px-1"
+              className="text-secondary font-normal text-right min-w-[2rem] w-[2rem] border border-border rounded-md px-1 py-0.5 focus:border-tertiary focus:outline-solid focus:outline-tertiary focus:outline-2 focus:outline-offset-1"
             />
           ) : (
             <div
-              className="text-secondary font-normal text-right min-w-[2rem] cursor-pointer hover:text-primary"
+              className="text-secondary font-normal text-right w-[2rem] cursor-pointer hover:text-primary"
               onClick={(e) => {
                 e.stopPropagation();
                 if (permissions.write && listStyle?.data.value === "ordered") {

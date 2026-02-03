@@ -528,7 +528,7 @@ export function SelectionManager() {
               }
               if (!block.listData || !previousBlock.listData) continue;
               let { foldedBlocks, toggleFold } = useUIState.getState();
-              indent(block, previousBlock, rep, { foldedBlocks, toggleFold });
+              await indent(block, previousBlock, rep, { foldedBlocks, toggleFold });
             }
           }
         }

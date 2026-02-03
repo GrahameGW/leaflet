@@ -28,7 +28,7 @@ export function unorderListItems(
   });
 }
 
-export function indent(
+export async function indent(
   block: Block,
   previousBlock?: Block,
   rep?: Replicache<ReplicacheMutators> | null,
@@ -53,12 +53,35 @@ export function indent(
     entity: block.value,
   });
 
-  // Reset number to 1 for ordered lists when indenting
+  // For ordered lists, calculate the next number at the new depth
   if (block.listData.listStyle === "ordered") {
+    let targetDepth = block.listData.depth + 1;
+    let allBlocks = await rep?.query((tx) =>
+      getBlocksWithType(tx, block.parent),
+    );
+    let previousAtDepth: Block | null = null;
+    if (allBlocks) {
+      let currentIndex = allBlocks.findIndex((b) => b.value === block.value);
+      for (let i = currentIndex - 1; i >= 0; i--) {
+        let b = allBlocks[i];
+        if (
+          b.listData?.listStyle === "ordered" &&
+          b.listData?.depth === targetDepth
+        ) {
+          previousAtDepth = b;
+          break;
+        }
+      }
+    }
+
+    let nextNumber = previousAtDepth?.listData?.listNumber
+      ? previousAtDepth.listData.listNumber + 1
+      : 1;
+
     rep?.mutate.assertFact({
       entity: block.value,
       attribute: "block/list-number",
-      data: { type: "number", value: 1 },
+      data: { type: "number", value: nextNumber },
     });
   }
 

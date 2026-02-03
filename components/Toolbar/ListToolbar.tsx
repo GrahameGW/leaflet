@@ -126,9 +126,9 @@ export const ListToolbar = (props: { onClose: () => void }) => {
           !previousBlock?.listData ||
           previousBlock.listData.depth < block?.listData?.depth!
         }
-        onClick={() => {
+        onClick={async () => {
           if (!rep || !block || !previousBlock) return;
-          indent(block, previousBlock, rep, { foldedBlocks, toggleFold });
+          await indent(block, previousBlock, rep, { foldedBlocks, toggleFold });
         }}
       >
         <ListIndentIncreaseSmall />
