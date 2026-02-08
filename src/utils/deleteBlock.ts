@@ -5,6 +5,7 @@ import { scanIndex } from "src/replicache/utils";
 import { getBlocksWithType } from "src/replicache/getBlocks";
 import { focusBlock } from "src/utils/focusBlock";
 import { UndoManager } from "src/undoManager";
+import { renumberOrderedList, AffectedBlock } from "src/utils/renumberOrderedList";
 
 export async function deleteBlock(
   entities: string[],
@@ -13,6 +14,10 @@ export async function deleteBlock(
 ) {
   // get what pagess we need to close as a result of deleting this block
   let pagesToClose = [] as string[];
+  // Track ordered list items being deleted for renumbering
+  let orderedListAffected: AffectedBlock[] = [];
+  let pageParent: string | undefined;
+
   for (let entity of entities) {
     let [type] = await rep.query((tx) =>
       scanIndex(tx).eav(entity, "block/type"),
@@ -32,9 +37,28 @@ export async function deleteBlock(
       );
       pagesToClose = [archive?.data.value, draft?.data.value];
     }
+
+    // Check if this is an ordered list item
+    let [listStyle] = await rep.query((tx) =>
+      scanIndex(tx).eav(entity, "block/list-style"),
+    );
+    if (listStyle?.data.value === "ordered") {
+      let [isList] = await rep.query((tx) =>
+        scanIndex(tx).eav(entity, "block/is-list"),
+      );
+      if (isList?.data.value) {
+        // Get depth from parent structure - we'll use depth 1 as a marker
+        // The renumber utility will handle all depths at the affected level
+        orderedListAffected.push({
+          entityId: entity,
+          newDepth: 1, // Will trigger renumber of depth 1; utility handles grouping
+        });
+      }
+    }
   }
 
-  // figure out what to focus
+  //  the next and previous blocks in the block list
+  // if the focused thing is a page and not a block, return
   let focusedBlock = useUIState.getState().focusedEntity;
   let parent =
     focusedBlock?.entityType === "page"
@@ -110,9 +134,12 @@ export async function deleteBlock(
 
   // close the pages
   pagesToClose.forEach((page) => page && useUIState.getState().closePage(page));
-  undoManager && undoManager.startGroup();
 
-  // delete the blocks
+  // Store pageParent before deletion for renumbering
+  if (orderedListAffected.length > 0 && parent) {
+    pageParent = parent;
+  }
+
   await Promise.all(
     entities.map((entity) =>
       rep?.mutate.removeBlock({
@@ -120,5 +147,13 @@ export async function deleteBlock(
       }),
     ),
   );
+
+  // Renumber remaining ordered list items after deletion
+  if (orderedListAffected.length > 0 && pageParent) {
+    await renumberOrderedList(rep, {
+      pageParent,
+      affectedBlocks: orderedListAffected,
+    });
+  }
   undoManager && undoManager.endGroup();
 }

@@ -22,6 +22,7 @@ import { v7 } from "uuid";
 import { scanIndex } from "src/replicache/utils";
 import { indent, outdent } from "src/utils/list-operations";
 import { getBlocksWithType } from "src/replicache/getBlocks";
+import { renumberOrderedList } from "src/utils/renumberOrderedList";
 import { isTextBlock } from "src/utils/isTextBlock";
 import { UndoManager } from "src/undoManager";
 type PropsRef = RefObject<
@@ -437,7 +438,7 @@ const enter =
           let listStyle = await repRef.current?.query((tx) =>
             scanIndex(tx).eav(propsRef.current.entityID, "block/list-style"),
           );
-          if (listStyle?.[0])
+          if (listStyle?.[0]) {
             await repRef.current?.mutate.assertFact({
               entity: newEntityID,
               attribute: "block/list-style",
@@ -446,19 +447,16 @@ const enter =
                 value: listStyle[0].data.value,
               },
             });
-          // Set list number to next number if this is an ordered list
-          if (listStyle?.[0]) {
-            let listNumber = await repRef.current?.query((tx) =>
-              scanIndex(tx).eav(propsRef.current.entityID, "block/list-number"),
-            );
-            await repRef.current?.mutate.assertFact({
-              entity: newEntityID,
-              attribute: "block/list-number",
-              data: {
-                type: "number",
-                value: (listNumber?.[0]?.data.value || 0) + 1,
-              },
-            });
+            // Renumber ordered list items
+            if (listStyle[0].data.value === "ordered") {
+              await renumberOrderedList(repRef.current, {
+                pageParent: propsRef.current.parent,
+                affectedBlocks: [{
+                  entityId: newEntityID,
+                  newDepth: propsRef.current.listData.depth,
+                }],
+              });
+            }
           }
         }
         return;
@@ -535,7 +533,7 @@ const enter =
         let listStyle = await repRef.current?.query((tx) =>
           scanIndex(tx).eav(propsRef.current.entityID, "block/list-style"),
         );
-        if (listStyle?.[0])
+        if (listStyle?.[0]) {
           await repRef.current?.mutate.assertFact({
             entity: newEntityID,
             attribute: "block/list-style",
@@ -544,19 +542,18 @@ const enter =
               value: listStyle[0].data.value,
             },
           });
-        // Set list number to next number if this is an ordered list
-        if (listStyle?.[0]) {
-          let listNumber = await repRef.current?.query((tx) =>
-            scanIndex(tx).eav(propsRef.current.entityID, "block/list-number"),
-          );
-          await repRef.current?.mutate.assertFact({
-            entity: newEntityID,
-            attribute: "block/list-number",
-            data: {
-              type: "number",
-              value: (listNumber?.[0]?.data.value || 0) + 1,
-            },
-          });
+          // Renumber ordered list items using centralized utility
+          if (listStyle[0].data.value === "ordered") {
+            await renumberOrderedList(repRef.current, {
+              pageParent: propsRef.current.parent,
+              affectedBlocks: [{
+                entityId: newEntityID,
+                newDepth: createChild
+                  ? propsRef.current.listData.depth + 1
+                  : propsRef.current.listData.depth,
+              }],
+            });
+          }
         }
         let checked = await repRef.current?.query((tx) =>
           scanIndex(tx).eav(propsRef.current.entityID, "block/check-list"),

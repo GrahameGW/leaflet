@@ -2,7 +2,6 @@ import { Block } from "components/Blocks/Block";
 import { Replicache } from "replicache";
 import type { ReplicacheMutators } from "src/replicache";
 import { v7 } from "uuid";
-import { getBlocksWithType } from "src/replicache/getBlocks";
 
 export function orderListItems(
   block: Block,
@@ -36,14 +35,14 @@ export async function indent(
     foldedBlocks: string[];
     toggleFold: (entityID: string) => void;
   },
-) {
-  if (!block.listData) return false;
+): Promise<{ success: boolean }> {
+  if (!block.listData) return { success: false };
 
   // All lists use parent/child structure - move to new parent
-  if (!previousBlock?.listData) return false;
+  if (!previousBlock?.listData) return { success: false };
   let depth = block.listData.depth;
   let newParent = previousBlock.listData.path.find((f) => f.depth === depth);
-  if (!newParent) return false;
+  if (!newParent) return { success: false };
   if (foldState && foldState.foldedBlocks.includes(newParent.entity))
     foldState.toggleFold(newParent.entity);
   rep?.mutate.retractFact({ factID: block.factID });
@@ -53,39 +52,8 @@ export async function indent(
     entity: block.value,
   });
 
-  // For ordered lists, calculate the next number at the new depth
-  if (block.listData.listStyle === "ordered") {
-    let targetDepth = block.listData.depth + 1;
-    let allBlocks = await rep?.query((tx) =>
-      getBlocksWithType(tx, block.parent),
-    );
-    let previousAtDepth: Block | null = null;
-    if (allBlocks) {
-      let currentIndex = allBlocks.findIndex((b) => b.value === block.value);
-      for (let i = currentIndex - 1; i >= 0; i--) {
-        let b = allBlocks[i];
-        if (
-          b.listData?.listStyle === "ordered" &&
-          b.listData?.depth === targetDepth
-        ) {
-          previousAtDepth = b;
-          break;
-        }
-      }
-    }
-
-    let nextNumber = previousAtDepth?.listData?.listNumber
-      ? previousAtDepth.listData.listNumber + 1
-      : 1;
-
-    rep?.mutate.assertFact({
-      entity: block.value,
-      attribute: "block/list-number",
-      data: { type: "number", value: nextNumber },
-    });
-  }
-
-  return true;
+  // Numbering is now handled by renumberOrderedList utility
+  return { success: true };
 }
 
 export function outdentFull(
@@ -133,8 +101,9 @@ export async function outdent(
     foldedBlocks: string[];
     toggleFold: (entityID: string) => void;
   },
-) {
-  if (!block.listData) return false;
+  excludeFromSiblings?: string[],
+): Promise<{ success: boolean }> {
+  if (!block.listData) return { success: false };
   let listData = block.listData;
 
   // All lists use parent/child structure - move blocks between parents
@@ -149,12 +118,13 @@ export async function outdent(
       newParent: block.parent,
       after: block.value,
     });
+    return { success: true };
   } else {
-    if (!previousBlock || !previousBlock.listData) return false;
+    if (!previousBlock || !previousBlock.listData) return { success: false };
     let after = previousBlock.listData.path.find(
       (f) => f.depth === listData.depth - 1,
     )?.entity;
-    if (!after) return false;
+    if (!after) return { success: false };
     let parent: string | undefined = undefined;
     if (listData.depth === 2) {
       parent = block.parent;
@@ -163,7 +133,7 @@ export async function outdent(
         (f) => f.depth === listData.depth - 2,
       )?.entity;
     }
-    if (!parent) return false;
+    if (!parent) return { success: false };
     if (foldState && foldState.foldedBlocks.includes(parent))
       foldState.toggleFold(parent);
     rep?.mutate.outdentBlock({
@@ -171,38 +141,10 @@ export async function outdent(
       newParent: parent,
       oldParent: listData.parent,
       after,
+      excludeFromSiblings,
     });
 
-    // For ordered lists, calculate the next number at the new depth
-    if (listData.listStyle === "ordered") {
-      let targetDepth = listData.depth - 1;
-      let allBlocks = await rep?.query((tx) =>
-        getBlocksWithType(tx, block.parent),
-      );
-      let previousAtDepth: Block | null = null;
-      if (allBlocks) {
-        let currentIndex = allBlocks.findIndex((b) => b.value === block.value);
-        for (let i = currentIndex - 1; i >= 0; i--) {
-          let b = allBlocks[i];
-          if (
-            b.listData?.listStyle === "ordered" &&
-            b.listData?.depth === targetDepth
-          ) {
-            previousAtDepth = b;
-            break;
-          }
-        }
-      }
-
-      let nextNumber = previousAtDepth?.listData?.listNumber
-        ? previousAtDepth.listData.listNumber + 1
-        : 1;
-
-      rep?.mutate.assertFact({
-        entity: block.value,
-        attribute: "block/list-number",
-        data: { type: "number", value: nextNumber },
-      });
-    }
+    // Numbering is now handled by renumberOrderedList utility
+    return { success: true };
   }
 }
