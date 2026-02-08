@@ -33,6 +33,7 @@ import { HorizontalRule } from "./HorizontalRule";
 import { deepEquals } from "src/utils/deepEquals";
 import { isTextBlock } from "src/utils/isTextBlock";
 import { focusPage } from "src/utils/focusPage";
+import { renumberOrderedList } from "src/utils/renumberOrderedList";
 import { DeleteTiny } from "components/Icons/DeleteTiny";
 import { ArrowDownTiny } from "components/Icons/ArrowDownTiny";
 import { Separator } from "components/Layout";

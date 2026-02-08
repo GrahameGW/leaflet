@@ -3,7 +3,9 @@ import { ReplicacheMutators } from "src/replicache";
 import { useUIState } from "src/useUIState";
 import { scanIndex } from "src/replicache/utils";
 import { getBlocksWithType } from "src/replicache/getBlocks";
+import { getBlocksWithType } from "src/replicache/getBlocks";
 import { focusBlock } from "src/utils/focusBlock";
+import { renumberOrderedList, AffectedBlock } from "src/utils/renumberOrderedList";
 import { UndoManager } from "src/undoManager";
 import { renumberOrderedList, AffectedBlock } from "src/utils/renumberOrderedList";
 
