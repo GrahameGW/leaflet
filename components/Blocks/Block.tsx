@@ -33,7 +33,7 @@ import { HorizontalRule } from "./HorizontalRule";
 import { deepEquals } from "src/utils/deepEquals";
 import { isTextBlock } from "src/utils/isTextBlock";
 import { focusPage } from "src/utils/focusPage";
-import { getBlocksWithType } from "src/replicache/getBlocks";
+import { renumberOrderedList } from "src/utils/renumberOrderedList";
 
 export type Block = {
   factID: string;
@@ -455,39 +455,21 @@ export const ListMarker = (
     }
 
     const oldNumber = props.listData.listNumber || 1;
-    const difference = newNumber - oldNumber;
 
-    if (difference === 0) {
+    if (newNumber === oldNumber) {
       setEditingNumber(false);
       return;
     }
 
-    // Update this block's number
-    await rep.mutate.assertFact({
-      entity: props.value,
-      attribute: "block/list-number",
-      data: { type: "number", value: newNumber },
+    // Use centralized renumber utility with preserveStartingNumber
+    await renumberOrderedList(rep, {
+      pageParent: props.parent,
+      affectedBlocks: [{
+        entityId: props.value,
+        newDepth: props.listData.depth,
+        preserveStartingNumber: newNumber,
+      }],
     });
-
-    // Cascade to following blocks at the same depth
-    const allBlocks = await rep.query((tx) => getBlocksWithType(tx, props.parent));
-    if (allBlocks) {
-      const currentIndex = allBlocks.findIndex((b) => b.value === props.value);
-      for (let i = currentIndex + 1; i < allBlocks.length; i++) {
-        const block = allBlocks[i];
-        if (
-          block.listData?.listStyle === "ordered" &&
-          block.listData?.depth === props.listData.depth
-        ) {
-          const currentNumber = block.listData.listNumber || 1;
-          await rep.mutate.assertFact({
-            entity: block.value,
-            attribute: "block/list-number",
-            data: { type: "number", value: currentNumber + difference },
-          });
-        }
-      }
-    }
 
     setEditingNumber(false);
   };
