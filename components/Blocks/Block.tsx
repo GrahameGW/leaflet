@@ -26,20 +26,16 @@ import { PollBlock } from "./PollBlock";
 import { BlueskyPostBlock } from "./BlueskyPostBlock";
 import { CheckboxChecked } from "components/Icons/CheckboxChecked";
 import { CheckboxEmpty } from "components/Icons/CheckboxEmpty";
-import { LockTiny } from "components/Icons/LockTiny";
 import { MathBlock } from "./MathBlock";
 import { CodeBlock } from "./CodeBlock";
 import { HorizontalRule } from "./HorizontalRule";
 import { deepEquals } from "src/utils/deepEquals";
 import { isTextBlock } from "src/utils/isTextBlock";
-import { focusPage } from "src/utils/focusPage";
-import { renumberOrderedList } from "src/utils/renumberOrderedList";
 import { DeleteTiny } from "components/Icons/DeleteTiny";
 import { ArrowDownTiny } from "components/Icons/ArrowDownTiny";
 import { Separator } from "components/Layout";
 import { moveBlockUp, moveBlockDown } from "src/utils/moveBlock";
 import { deleteBlock } from "src/utils/deleteBlock";
-import { getBlocksWithType } from "src/replicache/getBlocks";
 import { renumberOrderedList } from "src/utils/renumberOrderedList";
 
 export type Block = {

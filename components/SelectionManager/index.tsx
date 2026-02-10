@@ -7,7 +7,7 @@ import { focusBlock } from "src/utils/focusBlock";
 import { useEditorStates } from "src/state/useEditorState";
 import { useEntitySetContext } from "../EntitySetProvider";
 import { getBlocksWithType } from "src/replicache/getBlocks";
-import { indent, outdent, outdentFull } from "src/utils/list-operations";
+import { indent, outdentFull, multiSelectOutdent } from "src/utils/list-operations";
 import { renumberOrderedList, AffectedBlock } from "src/utils/renumberOrderedList";
 import { addShortcut, Shortcut } from "src/shortcuts";
 import { elementId } from "src/utils/elementId";
@@ -492,27 +492,8 @@ export function SelectionManager() {
           let affectedBlocks: AffectedBlock[] = [];
 
           if (e.shiftKey) {
-            for (let i = siblings.length - 1; i >= 0; i--) {
-              let block = siblings[i];
-              if (!sortedSelection.find((s) => s.value === block.value))
-                continue;
-              if (
-                sortedSelection.find((s) => s.value === block.listData?.parent)
-              )
-                continue;
-              let parentoffset = 1;
-              let previousBlock = siblings[i - parentoffset];
-              while (
-                previousBlock &&
-                sortedSelection.find((s) => previousBlock.value === s.value)
-              ) {
-                parentoffset += 1;
-                previousBlock = siblings[i - parentoffset];
-              }
-              if (!block.listData || !previousBlock.listData) continue;
-              let { foldedBlocks, toggleFold } = useUIState.getState();
-              await outdent(block, previousBlock, rep, { foldedBlocks, toggleFold });
-            }
+            let { foldedBlocks, toggleFold } = useUIState.getState();
+            await multiSelectOutdent(sortedSelection, siblings, rep, { foldedBlocks, toggleFold });
           } else {
             for (let i = 0; i < siblings.length; i++) {
               let block = siblings[i];

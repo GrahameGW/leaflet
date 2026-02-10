@@ -2,15 +2,7 @@ import { useUIState } from "src/useUIState";
 import { ReplicacheMutators, useReplicache } from "src/replicache";
 import { ToolbarButton } from "./index";
 import { copySelection } from "src/utils/copySelection";
-<<<<<<< HEAD
 import { useSmoker, useToaster } from "components/Toast";
-
-=======
-import { useSmoker } from "components/Toast";
-import { getBlocksWithType } from "src/replicache/getBlocks";
-import { Replicache } from "replicache";
-import { LockBlockButton } from "./LockBlockButton";
->>>>>>> 6e068403 (ordered lists)
 import { Props } from "components/Icons/Props";
 import { TextAlignmentButton } from "./TextAlignmentToolbar";
 import { getSortedSelection } from "components/SelectionManager/selectionState";
