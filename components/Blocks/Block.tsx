@@ -36,7 +36,6 @@ import { ArrowDownTiny } from "components/Icons/ArrowDownTiny";
 import { Separator } from "components/Layout";
 import { moveBlockUp, moveBlockDown } from "src/utils/moveBlock";
 import { deleteBlock } from "src/utils/deleteBlock";
-import { renumberOrderedList } from "src/utils/renumberOrderedList";
 
 export type Block = {
   factID: string;
@@ -47,7 +46,8 @@ export type Block = {
   listData?: {
     checklist?: boolean;
     listStyle?: "ordered" | "unordered";
-    listNumber?: number;
+    listStart?: number;
+    displayNumber?: number;
     path: { depth: number; entity: string }[];
     parent: string;
     depth: number;
@@ -194,7 +194,7 @@ function deepEqualsBlockProps(
       prevProps.listData.checklist !== nextProps.listData.checklist ||
       prevProps.listData.parent !== nextProps.listData.parent ||
       prevProps.listData.depth !== nextProps.listData.depth ||
-      prevProps.listData.listNumber !== nextProps.listData.listNumber ||
+      prevProps.listData.displayNumber !== nextProps.listData.displayNumber ||
       prevProps.listData.listStyle !== nextProps.listData.listStyle
     ) {
       return false;
@@ -526,22 +526,21 @@ export const ListMarker = (
       return;
     }
 
-    const oldNumber = props.listData.listNumber || 1;
+    const currentDisplay = props.listData.displayNumber || 1;
 
-    if (newNumber === oldNumber) {
-      setEditingNumber(false);
-      return;
+    if (newNumber === currentDisplay) {
+      // Remove override if it matches the computed number
+      await rep.mutate.retractAttribute({
+        entity: props.value,
+        attribute: "block/list-number",
+      });
+    } else {
+      await rep.mutate.assertFact({
+        entity: props.value,
+        attribute: "block/list-number",
+        data: { type: "number", value: newNumber },
+      });
     }
-
-    // Use centralized renumber utility with preserveStartingNumber
-    await renumberOrderedList(rep, {
-      pageParent: props.parent,
-      affectedBlocks: [{
-        entityId: props.value,
-        newDepth: props.listData.depth,
-        preserveStartingNumber: newNumber,
-      }],
-    });
 
     setEditingNumber(false);
   };
@@ -597,12 +596,12 @@ export const ListMarker = (
               onClick={(e) => {
                 e.stopPropagation();
                 if (permissions.write && listStyle?.data.value === "ordered") {
-                  setNumberInputValue(String(props.listData?.listNumber || 1));
+                  setNumberInputValue(String(props.listData?.displayNumber || 1));
                   setEditingNumber(true);
                 }
               }}
             >
-              {props.listData?.listNumber || 1}.
+              {props.listData?.displayNumber || 1}.
             </div>
           )
         ) : (

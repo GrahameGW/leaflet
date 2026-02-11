@@ -1,7 +1,6 @@
 import { Block } from "components/Blocks/Block";
 import { Replicache } from "replicache";
 import type { ReplicacheMutators } from "src/replicache";
-import { renumberOrderedList, AffectedBlock } from "src/utils/renumberOrderedList";
 import { v7 } from "uuid";
 
 export function orderListItems(
@@ -53,7 +52,6 @@ export async function indent(
     entity: block.value,
   });
 
-  // Numbering is now handled by renumberOrderedList utility
   return { success: true };
 }
 
@@ -146,7 +144,6 @@ export async function outdent(
       excludeFromSiblings,
     });
 
-    // Numbering is now handled by renumberOrderedList utility
     return { success: true };
   }
 }
@@ -168,21 +165,12 @@ export async function multiSelectOutdent(
     (b) => !b.listData || b.listData.depth === 1,
   );
 
-  let affectedBlocks: AffectedBlock[] = [];
-
   if (allAtDepth1) {
     // Convert depth-1 items to plain text (outdent handles this)
     for (let i = siblings.length - 1; i >= 0; i--) {
       let block = siblings[i];
       if (!selectedSet.has(block.value)) continue;
       if (!block.listData) continue;
-      if (block.listData.listStyle === "ordered") {
-        affectedBlocks.push({
-          entityId: block.value,
-          newDepth: 1,
-          previousDepth: 1,
-        });
-      }
       await outdent(block, null, rep, foldState, selectedEntities);
     }
   } else {
@@ -201,20 +189,7 @@ export async function multiSelectOutdent(
         if (parentBlock?.listData && parentBlock.listData.depth > 1) continue;
       }
 
-      if (block.listData.listStyle === "ordered") {
-        affectedBlocks.push({
-          entityId: block.value,
-          newDepth: block.listData.depth - 1,
-          previousDepth: block.listData.depth,
-        });
-      }
-
       await outdent(block, null, rep, foldState, selectedEntities);
     }
-  }
-
-  // Renumber ordered list items at affected depths
-  if (affectedBlocks.length > 0) {
-    await renumberOrderedList(rep, { pageParent, affectedBlocks });
   }
 }

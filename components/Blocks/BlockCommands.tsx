@@ -181,11 +181,6 @@ export const blockCommands: Command[] = [
           attribute: "block/list-style",
           data: { value: "ordered", type: "list-style-union" },
         },
-        {
-          entity,
-          attribute: "block/list-number",
-          data: { value: 1, type: "number" },
-        },
       ]);
       clearCommandSearchText(entity);
     },

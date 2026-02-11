@@ -22,7 +22,6 @@ import { v7 } from "uuid";
 import { scanIndex } from "src/replicache/utils";
 import { indent, outdent } from "src/utils/list-operations";
 import { getBlocksWithType } from "src/replicache/getBlocks";
-import { renumberOrderedList } from "src/utils/renumberOrderedList";
 import { isTextBlock } from "src/utils/isTextBlock";
 import { UndoManager } from "src/undoManager";
 type PropsRef = RefObject<
@@ -447,16 +446,6 @@ const enter =
                 value: listStyle[0].data.value,
               },
             });
-            // Renumber ordered list items
-            if (listStyle[0].data.value === "ordered") {
-              await renumberOrderedList(repRef.current, {
-                pageParent: propsRef.current.parent,
-                affectedBlocks: [{
-                  entityId: newEntityID,
-                  newDepth: propsRef.current.listData.depth,
-                }],
-              });
-            }
           }
         }
         return;
@@ -542,18 +531,6 @@ const enter =
               value: listStyle[0].data.value,
             },
           });
-          // Renumber ordered list items using centralized utility
-          if (listStyle[0].data.value === "ordered") {
-            await renumberOrderedList(repRef.current, {
-              pageParent: propsRef.current.parent,
-              affectedBlocks: [{
-                entityId: newEntityID,
-                newDepth: createChild
-                  ? propsRef.current.listData.depth + 1
-                  : propsRef.current.listData.depth,
-              }],
-            });
-          }
         }
         let checked = await repRef.current?.query((tx) =>
           scanIndex(tx).eav(propsRef.current.entityID, "block/check-list"),

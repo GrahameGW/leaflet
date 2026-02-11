@@ -6,7 +6,6 @@ import { isTextBlock } from "src/utils/isTextBlock";
 import { focusBlock } from "src/utils/focusBlock";
 import { elementId } from "src/utils/elementId";
 import { indent, outdent } from "src/utils/list-operations";
-import { renumberOrderedList } from "src/utils/renumberOrderedList";
 import { generateKeyBetween } from "fractional-indexing";
 import { v7 } from "uuid";
 import { BlockProps } from "./Block";
@@ -96,32 +95,10 @@ async function Tab({ e, props, rep }: Args) {
   if (e.shiftKey) {
     e.preventDefault();
     await outdent(props, props.previousBlock, rep, { foldedBlocks, toggleFold });
-    // Renumber ordered list items after outdent
-    if (props.listData?.listStyle === "ordered") {
-      await renumberOrderedList(rep, {
-        pageParent: props.parent,
-        affectedBlocks: [{
-          entityId: props.entityID,
-          newDepth: props.listData.depth - 1,
-          previousDepth: props.listData.depth,
-        }],
-      });
-    }
   } else {
     e.preventDefault();
     if (props.previousBlock) {
       await indent(props, props.previousBlock, rep, { foldedBlocks, toggleFold });
-      // Renumber ordered list items after indent
-      if (props.listData?.listStyle === "ordered") {
-        await renumberOrderedList(rep, {
-          pageParent: props.parent,
-          affectedBlocks: [{
-            entityId: props.entityID,
-            newDepth: props.listData.depth + 1,
-            previousDepth: props.listData.depth,
-          }],
-        });
-      }
     }
   }
 }

@@ -17,7 +17,6 @@ import { TextSelection } from "prosemirror-state";
 import type { FilterAttributes } from "src/replicache/attributes";
 import { addLinkBlock } from "src/utils/addLinkBlock";
 import { UndoManager } from "src/undoManager";
-import { renumberOrderedList, AffectedBlock } from "src/utils/renumberOrderedList";
 
 const parser = ProsemirrorDOMParser.fromSchema(schema);
 const multilineParser = ProsemirrorDOMParser.fromSchema(multiBlockSchema);
@@ -88,8 +87,6 @@ export const useHandlePaste = (
         if (
           !(children.length === 1 && children[0].tagName === "IMG" && hasImage)
         ) {
-          // Track ordered list items for renumbering after paste
-          const orderedListItems: { entityId: string; depth: number }[] = [];
           const pasteParent = propsRef.current.listData
             ? propsRef.current.listData.parent
             : propsRef.current.parent;
@@ -111,22 +108,8 @@ export const useHandlePaste = (
                 return currentPosition;
               },
               last: index === children.length - 1,
-              orderedListItems,
             });
           });
-
-          // Renumber ordered list items after paste completes
-          if (orderedListItems.length > 0) {
-            setTimeout(() => {
-              renumberOrderedList(rep, {
-                pageParent: propsRef.current.parent,
-                affectedBlocks: orderedListItems.map((item) => ({
-                  entityId: item.entityId,
-                  newDepth: item.depth,
-                })),
-              });
-            }, 20);
-          }
         }
       }
 
@@ -189,7 +172,7 @@ const createBlockFromHTML = (
     parent,
     parentType,
     listStyle,
-    orderedListItems,
+    depth = 1,
   }: {
     parentType: "canvas" | "doc";
     parent: string;
@@ -201,7 +184,7 @@ const createBlockFromHTML = (
     entity_set: { set: string };
     getPosition: () => string;
     listStyle?: "ordered" | "unordered";
-    orderedListItems?: { entityId: string; depth: number }[];
+    depth?: number;
   },
 ) => {
   let type: Fact<"block/type">["data"]["value"] | null;
@@ -224,7 +207,7 @@ const createBlockFromHTML = (
         parent,
         parentType,
         listStyle: childListStyle,
-        orderedListItems,
+        depth,
       });
     }
   }
@@ -514,11 +497,6 @@ const createBlockFromHTML = (
         attribute: "block/list-style",
         data: { type: "list-style-union", value: listStyle },
       });
-      // Track ordered list items for renumbering
-      if (listStyle === "ordered" && orderedListItems) {
-        // Depth 1 for top-level items; nested items will have their depth set by their parent
-        orderedListItems.push({ entityId: entityID, depth: 1 });
-      }
     }
     if (nestedList) {
       hasChildren = true;
@@ -536,7 +514,7 @@ const createBlockFromHTML = (
           return currentPosition;
         },
         parent: entityID,
-        orderedListItems,
+        depth: depth + 1,
       });
     }
   }

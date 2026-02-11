@@ -3,6 +3,25 @@ import { ReadTransaction } from "replicache";
 import { Fact } from "src/replicache";
 import { scanIndex, scanIndexLocal } from "src/replicache/utils";
 
+function computeDisplayNumbers(blocks: Block[]): void {
+  let counters = new Map<string, number>();
+  for (let block of blocks) {
+    if (!block.listData) {
+      counters.clear();
+      continue;
+    }
+    if (block.listData.listStyle !== "ordered") continue;
+    let parent = block.listData.parent;
+    if (block.listData.listStart !== undefined) {
+      counters.set(parent, block.listData.listStart);
+    } else if (!counters.has(parent)) {
+      counters.set(parent, 1);
+    }
+    block.listData.displayNumber = counters.get(parent)!;
+    counters.set(parent, counters.get(parent)! + 1);
+  }
+}
+
 export const getBlocksWithType = async (
   tx: ReadTransaction,
   entityID: string,
@@ -12,7 +31,7 @@ export const getBlocksWithType = async (
   let scan = scanIndex(tx);
   let blocks = await scan.eav(entityID, "card/block");
 
-  return (
+  let result = (
     await Promise.all(
       blocks
         .sort((a, b) => {
@@ -60,7 +79,7 @@ export const getBlocksWithType = async (
                     path: newPath,
                     checklist: !!checklist[0],
                     listStyle: listStyle?.data.value,
-                    listNumber: listNumber?.data.value,
+                    listStart: listNumber?.data.value,
                   },
                 },
                 ...childBlocks.flat(),
@@ -81,6 +100,9 @@ export const getBlocksWithType = async (
   )
     .flat()
     .filter((f) => f !== null);
+
+  computeDisplayNumbers(result);
+  return result;
 };
 
 export const getBlocksWithTypeLocal = (
@@ -89,7 +111,7 @@ export const getBlocksWithTypeLocal = (
 ) => {
   let scan = scanIndexLocal(initialFacts);
   let blocks = scan.eav(entityID, "card/block");
-  return blocks
+  let result = blocks
     .sort((a, b) => {
       if (a.data.position === b.data.position) return a.id > b.id ? 1 : -1;
       return a.data.position > b.data.position ? 1 : -1;
@@ -128,7 +150,7 @@ export const getBlocksWithTypeLocal = (
                 parent,
                 path: newPath,
                 listStyle: listStyle?.data.value,
-                listNumber: listNumber?.data.value,
+                listStart: listNumber?.data.value,
               },
             },
             ...childBlocks.flat(),
@@ -147,4 +169,7 @@ export const getBlocksWithTypeLocal = (
     })
     .flat()
     .filter((f) => f !== null);
+
+  computeDisplayNumbers(result);
+  return result;
 };

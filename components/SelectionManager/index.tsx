@@ -8,7 +8,6 @@ import { useEditorStates } from "src/state/useEditorState";
 import { useEntitySetContext } from "../EntitySetProvider";
 import { getBlocksWithType } from "src/replicache/getBlocks";
 import { indent, outdentFull, multiSelectOutdent } from "src/utils/list-operations";
-import { renumberOrderedList, AffectedBlock } from "src/utils/renumberOrderedList";
 import { addShortcut, Shortcut } from "src/shortcuts";
 import { elementId } from "src/utils/elementId";
 import { scrollIntoViewIfNeeded } from "src/utils/scrollIntoViewIfNeeded";
@@ -488,9 +487,6 @@ export function SelectionManager() {
           if (sortedSelection.length <= 1) return;
           e.preventDefault();
 
-          let pageParent = siblings[0]?.parent;
-          let affectedBlocks: AffectedBlock[] = [];
-
           if (e.shiftKey) {
             let { foldedBlocks, toggleFold } = useUIState.getState();
             await multiSelectOutdent(sortedSelection, siblings, rep, { foldedBlocks, toggleFold });
@@ -515,25 +511,8 @@ export function SelectionManager() {
               if (!block.listData || !previousBlock.listData) continue;
               let { foldedBlocks, toggleFold } = useUIState.getState();
 
-              // Track affected block for renumbering
-              if (block.listData.listStyle === "ordered") {
-                affectedBlocks.push({
-                  entityId: block.value,
-                  newDepth: block.listData.depth + 1,
-                  previousDepth: block.listData.depth,
-                });
-              }
-
               await indent(block, previousBlock, rep, { foldedBlocks, toggleFold });
             }
-          }
-
-          // Renumber all affected ordered list items at once
-          if (pageParent && affectedBlocks.length > 0) {
-            await renumberOrderedList(rep, {
-              pageParent,
-              affectedBlocks,
-            });
           }
         }
         if (e.key === "ArrowDown") {

@@ -175,23 +175,38 @@ export const inputrules = (
         let tr = state.tr;
         tr.delete(0, match[0].length);
         const startNumber = parseInt(match[1], 10);
-        repRef.current?.mutate.assertFact([
-          {
-            entity: propsRef.current.entityID,
-            attribute: "block/is-list",
-            data: { type: "boolean", value: true },
-          },
-          {
-            entity: propsRef.current.entityID,
-            attribute: "block/list-style",
-            data: { type: "list-style-union", value: "ordered" },
-          },
-          {
-            entity: propsRef.current.entityID,
-            attribute: "block/list-number",
-            data: { type: "number", value: startNumber },
-          },
-        ]);
+        if (startNumber > 1) {
+          repRef.current?.mutate.assertFact([
+            {
+              entity: propsRef.current.entityID,
+              attribute: "block/is-list",
+              data: { type: "boolean", value: true },
+            },
+            {
+              entity: propsRef.current.entityID,
+              attribute: "block/list-style",
+              data: { type: "list-style-union", value: "ordered" },
+            },
+            {
+              entity: propsRef.current.entityID,
+              attribute: "block/list-number",
+              data: { type: "number", value: startNumber },
+            },
+          ]);
+        } else {
+          repRef.current?.mutate.assertFact([
+            {
+              entity: propsRef.current.entityID,
+              attribute: "block/is-list",
+              data: { type: "boolean", value: true },
+            },
+            {
+              entity: propsRef.current.entityID,
+              attribute: "block/list-style",
+              data: { type: "list-style-union", value: "ordered" },
+            },
+          ]);
+        }
         return tr;
       }),
 
