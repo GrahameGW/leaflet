@@ -68,13 +68,8 @@ export function outdentFull(
     data: { type: "boolean", value: false },
   });
 
-  // All lists use nested structure - need to handle parent/child structure
-  // find the next block that is a level 1 list item or not a list item.
-  // If there are none or this block is a level 1 list item, we don't need to move anything
-
   let after = block.listData?.path.find((f) => f.depth === 1)?.entity;
 
-  // move this block to be after that block
   after &&
     after !== block.value &&
     rep?.mutate.moveBlock({
@@ -182,7 +177,6 @@ export async function multiSelectOutdent(
       if (block.listData.depth === 1) continue;
 
       // Skip if parent is selected AND parent's depth > 1
-      // (parent will outdent, child moves implicitly)
       let parentEntity = block.listData.parent;
       if (selectedSet.has(parentEntity)) {
         let parentBlock = siblings.find((s) => s.value === parentEntity);
