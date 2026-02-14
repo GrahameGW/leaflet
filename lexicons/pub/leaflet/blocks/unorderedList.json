@@ -42,7 +42,7 @@
         "orderedListChildren": {
           "type": "ref",
           "description": "Nested ordered list items. Mutually exclusive with children; if both are present, children takes precedence.",
-          "ref": "pub.leaflet.blcoks.orderedList"
+          "ref": "pub.leaflet.blocks.orderedList"
         }
       }
     }
